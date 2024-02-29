@@ -1,0 +1,10 @@
+[package]
+name = "wayout"
+version = "0.1.0"
+edition = "2021"
+description = "Wayland utility to automatically terminate idle user sessions"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+wayland-client = "0.31.2"
