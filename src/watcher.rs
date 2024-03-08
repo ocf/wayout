@@ -78,10 +78,10 @@ impl WatcherState {
                 // notifications. We only need to bind to it once, so we store
                 // it in an Option field.
                 let notifier: ExtIdleNotifierV1 = registry.bind(name, version, qhandle, ());
+                self.notifier = Some(notifier);
                 for seat in self.seats.values() {
                     self.get_idle_notification(&seat, qhandle, name);
                 }
-                self.notifier = Some(notifier);
             }
 
             _ => {}

@@ -8,7 +8,6 @@ use zbus::Result;
 use zbus::{proxy, zvariant::Value};
 
 const APP_NAME: &str = "Auto Logout";
-const COUNTDOWN_SECS: u64 = 20;
 
 #[proxy(
     default_service = "org.freedesktop.Notifications",
