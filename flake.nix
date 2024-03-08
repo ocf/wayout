@@ -1,5 +1,5 @@
 {
-  description = "Wayland utility to automatically terminate idle user sessions";
+  description = "Automatic idle logout manager for Wayland";
 
   inputs = {
     cargo2nix.url = "github:cargo2nix/cargo2nix/release-0.11.0";

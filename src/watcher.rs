@@ -14,12 +14,10 @@ use wayland_protocols::ext::idle_notify::v1::client::ext_idle_notifier_v1::ExtId
 
 use crate::counter::StartCountdown;
 
-const TIMEOUT_MS: u32 = 3000;
-
 /// Run the watcher application, listening for idle notifications from the
 /// Wayland server and starting the countdown when all seats are idle.
 /// Blocks the thread.
-pub fn run(start_tx: mpsc::Sender<StartCountdown>) {
+pub fn run(wait_millis: u32, start_tx: mpsc::Sender<StartCountdown>) {
     // Connect to the Wayland server and create an event queue
     let connection = Connection::connect_to_env().unwrap();
     let mut event_queue: EventQueue<WatcherState> = connection.new_event_queue();
@@ -27,28 +25,30 @@ pub fn run(start_tx: mpsc::Sender<StartCountdown>) {
     let _registry = connection.display().get_registry(&qhandle, ());
 
     // Create a state object and start the event loop
-    let mut state = WatcherState::new(start_tx);
+    let mut state = WatcherState::new(wait_millis, start_tx);
     loop {
         event_queue.blocking_dispatch(&mut state).unwrap();
     }
 }
 
 struct WatcherState {
+    wait_millis: u32,
+    start_tx: mpsc::Sender<StartCountdown>,
+    cancel_tx: Option<mpsc::Sender<()>>,
     seats: HashMap<u32, WlSeat>,
     idle_seats: HashSet<u32>,
     notifier: Option<ExtIdleNotifierV1>,
-    start_tx: mpsc::Sender<StartCountdown>,
-    cancel_tx: Option<mpsc::Sender<()>>,
 }
 
 impl WatcherState {
-    pub fn new(start_tx: mpsc::Sender<StartCountdown>) -> Self {
+    pub fn new(wait_millis: u32, start_tx: mpsc::Sender<StartCountdown>) -> Self {
         Self {
+            wait_millis,
+            start_tx,
+            cancel_tx: None,
             seats: HashMap::new(),
             idle_seats: HashSet::new(),
             notifier: None,
-            start_tx,
-            cancel_tx: None,
         }
     }
 }
@@ -68,9 +68,7 @@ impl WatcherState {
                 // pointer. We need to bind to it to get a WlSeat struct, which
                 // we'll need to set up idle notifications.
                 let seat = registry.bind(name, version, qhandle, ());
-                if let Some(notifier) = &self.notifier {
-                    notifier.get_idle_notification(TIMEOUT_MS, &seat, qhandle, name);
-                }
+                self.get_idle_notification(&seat, qhandle, name);
                 self.seats.insert(name, seat);
                 self.resumed(name);
             }
@@ -81,7 +79,7 @@ impl WatcherState {
                 // it in an Option field.
                 let notifier: ExtIdleNotifierV1 = registry.bind(name, version, qhandle, ());
                 for seat in self.seats.values() {
-                    notifier.get_idle_notification(TIMEOUT_MS, seat, qhandle, name);
+                    self.get_idle_notification(&seat, qhandle, name);
                 }
                 self.notifier = Some(notifier);
             }
@@ -115,6 +113,12 @@ impl WatcherState {
         self.idle_seats.remove(&seat_name);
         if let Some(cancel_tx) = self.cancel_tx.take() {
             let _ = cancel_tx.send(());
+        }
+    }
+
+    fn get_idle_notification(&self, seat: &WlSeat, qhandle: &QueueHandle<Self>, name: u32) {
+        if let Some(notifier) = &self.notifier {
+            notifier.get_idle_notification(self.wait_millis, seat, qhandle, name);
         }
     }
 }

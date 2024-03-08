@@ -37,13 +37,13 @@ pub struct StartCountdown {
 
 /// Run the counter application, listening for start signals from the watcher
 /// and starting the countdown when they are received. Blocks the thread.
-pub fn run(start_rx: mpsc::Receiver<StartCountdown>) {
+pub fn run(countdown_secs: u64, start_rx: mpsc::Receiver<StartCountdown>) {
     let connection = Connection::session().unwrap();
     let proxy = NotificationsProxyBlocking::new(&connection).unwrap();
 
     // Listen for start signals from the watcher and start the countdown
     while let Ok(StartCountdown { cancel_rx }) = start_rx.recv() {
-        if let Err(err) = start_countdown(&proxy, cancel_rx) {
+        if let Err(err) = start_countdown(&proxy, countdown_secs, cancel_rx) {
             eprintln!("Error starting countdown: {}", err);
         };
     }
@@ -51,11 +51,12 @@ pub fn run(start_rx: mpsc::Receiver<StartCountdown>) {
 
 fn start_countdown(
     proxy: &NotificationsProxyBlocking,
+    countdown_secs: u64,
     cancel_rx: mpsc::Receiver<()>,
 ) -> Result<()> {
     let mut replaces_id = 0;
 
-    for seconds in (1..=COUNTDOWN_SECS).rev() {
+    for seconds in (1..=countdown_secs).rev() {
         // Save the ID of the notification so we can update it later
         replaces_id = proxy.notify(
             APP_NAME,
