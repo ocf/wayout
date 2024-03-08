@@ -8,7 +8,6 @@ use zbus::Result;
 use zbus::{proxy, zvariant::Value};
 
 const APP_NAME: &str = "Auto Logout";
-const APP_ICON: &str = "data-warning";
 const COUNTDOWN_SECS: u64 = 20;
 
 #[proxy(
@@ -61,7 +60,7 @@ fn start_countdown(
         replaces_id = proxy.notify(
             APP_NAME,
             replaces_id,
-            APP_ICON,
+            "data-warning",
             "Still there?",
             &format!("Logging you out in {} seconds...", seconds),
             &[],
@@ -84,7 +83,7 @@ fn cancel_countdown(proxy: &NotificationsProxyBlocking, replaces_id: u32) -> Res
     proxy.notify(
         APP_NAME,
         replaces_id,
-        APP_ICON,
+        "data-success",
         "Still there!",
         "Logging out has been canceled.",
         &[],
