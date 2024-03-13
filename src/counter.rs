@@ -94,7 +94,7 @@ fn cancel_countdown(proxy: &NotificationsProxyBlocking, replaces_id: u32) -> Res
 
 fn log_out() {
     Command::new("loginctl")
-        .arg("terminate-session")
+        .arg("kill-session")
         .arg(std::env::var_os("XDG_SESSION_ID").unwrap())
         .output()
         .unwrap();
