@@ -23,12 +23,17 @@
         rustChannel = "stable";
         packageFun = import ./Cargo.nix;
       };
-    in
-    rec {
-      packages = {
-        wayout = (rustPkgs.workspace.wayout { });
-        default = packages.wayout;
+
+      package = rustPkgs.workspace.wayout { };
+      overlay = final: prev: {
+        wayout = package;
       };
+    in
+    {
+      packages.default = package;
+      packages.wayout = package;
+      overlays.default = overlay;
+      overlays.wayout = overlay;
     }
   );
 }
