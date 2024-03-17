@@ -25,15 +25,10 @@
       };
 
       package = rustPkgs.workspace.wayout { };
-      overlay = final: prev: {
-        wayout = package;
-      };
     in
     {
       packages.default = package;
       packages.wayout = package;
-      overlays.default = overlay;
-      overlays.wayout = overlay;
     }
   );
 }
