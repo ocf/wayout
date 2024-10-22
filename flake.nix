@@ -1,34 +1,30 @@
 {
-  description = "Automatic idle logout manager for Wayland";
-
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    flake-utils.url = "github:numtide/flake-utils";
-    cargo2nix = {
-      url = "github:cargo2nix/cargo2nix/release-0.11.0";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.flake-utils.follows = "flake-utils";
-    };
+    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
+    crane.url = "github:ipetkov/crane";
+    systems.url = "github:nix-systems/default";
   };
 
-  outputs = { self, nixpkgs, flake-utils, cargo2nix }: flake-utils.lib.eachDefaultSystem (system:
+  outputs = { self, nixpkgs, crane, systems }:
     let
-      pkgs = import nixpkgs {
+      pkgsFor = system: import nixpkgs {
         inherit system;
-        overlays = [ cargo2nix.overlays.default ];
+        overlays = [ self.overlays.default ];
       };
 
-      rustPkgs = pkgs.rustBuilder.makePackageSet {
-        rustVersion = "latest";
-        rustChannel = "stable";
-        packageFun = import ./Cargo.nix;
-      };
-
-      package = rustPkgs.workspace.wayout { };
+      forAllSystems = fn: nixpkgs.lib.genAttrs
+        (import systems)
+        (system: fn (pkgsFor system));
     in
     {
-      packages.default = package;
-      packages.wayout = package;
-    }
-  );
+      overlays.default = final: prev: {
+        wayout = final.callPackage ./. {
+          craneLib = crane.mkLib final;
+        };
+      };
+
+      packages = forAllSystems (pkgs: {
+        default = pkgs.wayout;
+      });
+    };
 }
