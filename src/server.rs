@@ -11,8 +11,8 @@ use std::collections::HashMap;
 use zbus::Connection;
 use crate::notifications::NotificationsProxy;
 
-// TODO: Replace this with the SHA-256 hash of your secret token
-const AUTH_HASH: &str = "CHANGEME";
+// The SHA-256 hash of your secret token
+const AUTH_HASH: &str = "08f753dab1ae413defdde3afd3cc4a9f81f6b2a187b44b9ae09da62e5ae52f3f";
 
 #[derive(Deserialize)]
 struct NotifyParams {
