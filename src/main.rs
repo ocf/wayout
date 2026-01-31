@@ -5,6 +5,8 @@ use std::time::Duration;
 
 mod counter;
 mod watcher;
+mod server;
+mod notifications;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -34,8 +36,17 @@ fn main() {
     // needs to be able to run its own event loop.
     let watcher_thread = thread::spawn(move || watcher::run(wait_millis, start_tx));
     let counter_thread = thread::spawn(move || counter::run(countdown_secs, start_rx));
+    let _server_thread = thread::spawn(|| server::run());
 
-    // Wait for both threads to finish
-    watcher_thread.join().unwrap();
-    counter_thread.join().unwrap();
+    // Wait for threads to finish
+    // Note: server_thread will run forever, so this effectively waits for watcher/counter
+    if watcher_thread.join().is_err() {
+        eprintln!("Watcher thread panicked");
+    }
+    if counter_thread.join().is_err() {
+        eprintln!("Counter thread panicked");
+    }
+    // We don't necessarily need to join server thread as it's a daemon basically, 
+    // but if we want to catch panics we can.
+    // The original code joined watcher/counter.
 }

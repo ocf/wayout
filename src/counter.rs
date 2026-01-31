@@ -2,42 +2,15 @@ use std::collections::HashMap;
 use std::process::{exit, Command};
 use std::sync::mpsc;
 use std::time::Duration;
-
 use zbus::blocking::Connection;
 use zbus::Result;
-use zbus::{proxy, zvariant::Value};
+use crate::notifications::NotificationsProxyBlocking;
 
 const APP_NAME: &str = "Auto Logout";
 
 // TODO: make this configurable
 const IMMUNE_GROUPS: [&str; 2] = ["ocfstaff", "opstaff"];
 
-mod dbus {
-    #![allow(clippy::too_many_arguments)] // This is an external API
-
-    use super::*;
-
-    #[proxy(
-        default_service = "org.freedesktop.Notifications",
-        default_path = "/org/freedesktop/Notifications"
-    )]
-    trait Notifications {
-        /// Call the org.freedesktop.Notifications.Notify D-Bus method
-        fn notify(
-            &self,
-            app_name: &str,
-            replaces_id: u32,
-            app_icon: &str,
-            summary: &str,
-            body: &str,
-            actions: &[&str],
-            hints: HashMap<&str, &Value<'_>>,
-            expire_timeout: i32,
-        ) -> Result<u32>;
-    }
-}
-
-use dbus::*;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 enum Action {
@@ -90,7 +63,7 @@ pub struct StartCountdown {
 }
 
 /// Run the counter application, listening for start signals from the watcher
-/// and starting the countdown when they are received. Blocks the thread.
+/// and starting the countdown when they are received.
 pub fn run(countdown_secs: u64, start_rx: mpsc::Receiver<StartCountdown>) {
     let connection = Connection::session().unwrap();
     let proxy = NotificationsProxyBlocking::new(&connection).unwrap();

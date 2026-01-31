@@ -2,7 +2,7 @@
 
 craneLib.buildPackage {
   pname = "wayout";
-  version = "2024-10-22";
+  version = "2026-01-30";
 
   src = craneLib.cleanCargoSource ./.;
 
