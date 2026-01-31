@@ -5,39 +5,14 @@ use std::time::Duration;
 
 use zbus::blocking::Connection;
 use zbus::Result;
-use zbus::{proxy, zvariant::Value};
 
 const APP_NAME: &str = "Auto Logout";
 
 // TODO: make this configurable
 const IMMUNE_GROUPS: [&str; 2] = ["ocfstaff", "opstaff"];
 
-mod dbus {
-    #![allow(clippy::too_many_arguments)] // This is an external API
 
-    use super::*;
-
-    #[proxy(
-        default_service = "org.freedesktop.Notifications",
-        default_path = "/org/freedesktop/Notifications"
-    )]
-    trait Notifications {
-        /// Call the org.freedesktop.Notifications.Notify D-Bus method
-        fn notify(
-            &self,
-            app_name: &str,
-            replaces_id: u32,
-            app_icon: &str,
-            summary: &str,
-            body: &str,
-            actions: &[&str],
-            hints: HashMap<&str, &Value<'_>>,
-            expire_timeout: i32,
-        ) -> Result<u32>;
-    }
-}
-
-use dbus::*;
+use crate::notifications::NotificationsProxyBlocking;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 enum Action {
@@ -47,7 +22,19 @@ enum Action {
 
 impl Action {
     pub fn get_action_for_current_credentials() -> Self {
+        #[cfg(target_os = "macos")]
+        let groups = {
+            let output = std::process::Command::new("id").arg("-G").output().unwrap();
+            String::from_utf8(output.stdout)
+                .unwrap()
+                .split_whitespace()
+                .map(|s| nix::unistd::Gid::from_raw(s.parse().unwrap()))
+                .collect::<Vec<_>>()
+        };
+
+        #[cfg(not(target_os = "macos"))]
         let groups = nix::unistd::getgroups().unwrap();
+
         let is_immune = IMMUNE_GROUPS
             .iter()
             .filter_map(|group_name| {
@@ -90,8 +77,9 @@ pub struct StartCountdown {
 }
 
 /// Run the counter application, listening for start signals from the watcher
-/// and starting the countdown when they are received. Blocks the thread.
+/// and starting the countdown when they are received.
 pub fn run(countdown_secs: u64, start_rx: mpsc::Receiver<StartCountdown>) {
+
     let connection = Connection::session().unwrap();
     let proxy = NotificationsProxyBlocking::new(&connection).unwrap();
 
