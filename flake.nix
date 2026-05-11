@@ -27,6 +27,9 @@
         default = pkgs.wayout;
       });
 
-      nixosModules.default = ./module.nix;
+      nixosModules.default = { pkgs, ... }: {
+        imports = [ ./module.nix ];
+        nixpkgs.overlays = [ self.overlays.default ];
+      };
     };
 }
