@@ -26,5 +26,7 @@
       packages = forAllSystems (pkgs: {
         default = pkgs.wayout;
       });
+
+      nixosModules.default = ./module.nix;
     };
 }
