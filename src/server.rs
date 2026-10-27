@@ -8,7 +8,7 @@ use axum::{
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
-use zbus::Connection;
+use zbus::{Connection, zvariant::Value};
 use crate::notifications::NotificationsProxy;
 
 // The SHA-256 hash of your secret token
