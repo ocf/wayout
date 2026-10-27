@@ -89,7 +89,7 @@ async fn notify_handler(headers: HeaderMap, Json(payload): Json<NotifyParams>) -
     }
     
     // set notification to urgent so expire_timeout can be uncapped (5s limit on normal notifs)
-    hints_map.insert("urgency".to_string(), Value::U8(2));
+    hints_map.insert("urgency", Value::U8(2));
     
     // Note: zbus proxy notify takes `HashMap<&str, &Value<'_>>`.
     // We have `HashMap<&str, Value>`. We need to take references to the values in our map.
